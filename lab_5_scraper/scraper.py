@@ -3,9 +3,14 @@ Crawler implementation.
 """
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import datetime
 import json
 import pathlib
+import re
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -109,7 +114,7 @@ def make_request(url: str, config: Config) -> requests.models.Response:
     Returns:
         requests.models.Response: A response from a request
     """
-
+    return requests.get(url)
 
 class Crawler:
     """
@@ -126,7 +131,8 @@ class Crawler:
         Args:
             config (Config): Configuration
         """
-
+        self.config = config
+        self.urls = []
 
     def _extract_url(self, article_bs: Tag) -> str:
         """
@@ -143,6 +149,18 @@ class Crawler:
         """
         Find articles.
         """
+        urls = self.get_search_urls()
+
+        for url in urls:
+            response = make_request(url, self.config)
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            links = soup.find_all("a")
+
+            for link in links:
+                href = link.get("href")
+                if href:
+                    self.urls.append(href)
 
     def get_search_urls(self) -> list:
         """
@@ -151,6 +169,7 @@ class Crawler:
         Returns:
             list: seed_urls param
         """
+        return self.config.get_seed_urls()
 
 
 # 10
@@ -229,6 +248,17 @@ class HTMLParser:
         Returns:
             Article | bool: Article instance, False in case of request error
         """
+        response = make_request(self.full_url, self.config)
+
+        if not response:
+            return False
+
+        return Article(
+            article_id=self.article_id,
+            url=self.full_url,
+            title="title",
+            text="text"
+        )
 
 
 def prepare_environment(base_path: pathlib.Path | str) -> None:
@@ -244,7 +274,26 @@ def main() -> None:
     """
     Entrypoint for scraper module.
     """
+    url = "https://mnogo-smysla.ru/category/smysl-filma/"
 
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    links = soup.find_all("a")
+
+    unique_links = set()
+
+    for link in links:
+        href = link.get("href")
+
+        if href and "smysl-filma" in href and "#" not in href:
+            unique_links.add(href)
+
+    print("Статьи:")
+
+    for link in list(unique_links)[:5]:
+        print(link)
 
 if __name__ == "__main__":
+    print("Я запустилась!")
     main()
+
