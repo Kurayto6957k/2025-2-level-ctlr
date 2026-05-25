@@ -228,7 +228,7 @@ class Crawler:
     """
 
     #: Url pattern
-    url_pattern: re.Pattern | str = re.compile(r'https://mnogo-smysla\.ru/smysl-filma/[^"]+/')
+    url_pattern: re.Pattern | str = "https?://(www\.)?mnogo-smysla\.ru/"
 
     def __init__(self, config: Config) -> None:
         """
@@ -255,6 +255,7 @@ class Crawler:
             return href
         return ''
 
+
     def find_articles(self) -> None:
         """
         Find articles.
@@ -274,7 +275,9 @@ class Crawler:
                 if len(self.urls) >= self.config.get_num_articles():
                     return
                 url = self._extract_url(link)
-                if url and url not in self.urls:
+                if "https://mnogo-smysla.ru/category" in url:
+                    continue
+                if url and url not in self.urls and url not in self.get_search_urls():
                     self.urls.append(url)
 
     def get_search_urls(self) -> list:
@@ -340,17 +343,15 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        content = article_soup.find('div', class_='sf-entry-body')
+        content = article_soup.find('div', class_='sf-entry-content')
 
-        if content:
-            for tag in content.find_all(['script', 'style']):
-                tag.decompose()
-            blocks = content.find_all(['p', 'h2', 'h3', 'blockquote'])
-            text = '\n'.join(
-                b.get_text(strip=True) for b in blocks if b.get_text(strip=True)
-            )
-        else:
-            text = ''
+        for tag in content.find_all(['script', 'style']):
+            tag.decompose()
+        blocks = content.find_all(['p', 'h2', 'h3', 'blockquote'])
+        # print(blocks)
+        text = '\n'.join(
+            b.get_text(strip=True) for b in blocks if b.get_text(strip=True)
+        )
 
         self.article.text = text
 
