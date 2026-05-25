@@ -6,13 +6,9 @@ Crawler implementation.
 
 import datetime
 import json
-import os
 import pathlib
 import re
 import shutil
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -228,7 +224,7 @@ class Crawler:
     """
 
     #: Url pattern
-    url_pattern: re.Pattern | str = "https?://(www\.)?mnogo-smysla\.ru/"
+    url_pattern: re.Pattern | str = re.compile(r"https?://(www\.)?mnogo-smysla\.ru/")
 
     def __init__(self, config: Config) -> None:
         """
@@ -445,3 +441,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+    
